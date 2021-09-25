@@ -1,9 +1,12 @@
 const socket = io();
 
+const text = document.getElementById("msg");
+const tags = document.getElementById("tags");
 const chatForm = document.getElementById("chat-form");
 const roomName = document.getElementById("room-name");
 const userList = document.getElementById("users");
 const chatMessages = document.querySelector(".chat-messages");
+const leaveBtn = document.getElementById("leave-btn");
 
 const { username, room } = Qs.parse(location.search, {
   ignoreQueryPrefix: true,
@@ -19,6 +22,10 @@ socket.on("roomUsers", ({ room, users }) => {
 socket.on("message", (message) => {
   outputMessage(message);
 });
+
+socket.on("notification", (data) => {
+    alert(data);
+})
 
 chatForm.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -38,7 +45,7 @@ function outputMessage(message) {
   para.classList.add("text");
   para.innerText = message.text;
   div.appendChild(para);
-  document.querySelector(".chat-messages").appendChild(div);
+  chatMessages.appendChild(div);
 }
 
 function outputRoomName(room) {
@@ -54,7 +61,13 @@ function outputUsers(users) {
   });
 }
 
-let leaveBtn = document.getElementById("leave-btn");
+tags.addEventListener("click", async () => {
+  let receiver = prompt("enter receivers username");
+  let data = text.value;
+//   console.log(data);
+  await socket.emit("receiver", { receiver,data });
+});
+
 leaveBtn.addEventListener("click", () => {
   const leaveRoom = confirm("do you really wanna go??");
   if (leaveRoom) {

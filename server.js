@@ -6,6 +6,7 @@ const {
   userLeave,
   getCurrentUser,
   getRoomUsers,
+  getUserByUsername,
 } = require("./util/users");
 
 const app = express();
@@ -39,10 +40,16 @@ io.on("connection", (socket) => {
       users: getRoomUsers(user.room),
     });
   });
+  socket.on("receiver", async({receiver, data}) => {
+    let user = await getUserByUsername(receiver);
+    // console.log(user.id, data);
+    io.to(user.id).emit("notification", data);
+  });
   socket.on("chatMessage", (msg) => {
     const user = getCurrentUser(socket.id);
     io.to(user.room).emit("message", formatMessage(user.username, msg));
   });
+
   socket.on("disconnect", () => {
     const user = userLeave(socket.id);
     if (user) {

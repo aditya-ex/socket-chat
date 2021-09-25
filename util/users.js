@@ -10,11 +10,16 @@ function formatMessage(username, text) {
 function userJoin(id, username, room) {
   const user = { id, username, room };
   users.push(user);
+  // console.log(users);
   return user;
 }
 
 function getCurrentUser(id) {
   return users.find((user) => user.id === id);
+}
+
+function getUserByUsername(username){
+  return users.find((user)=> user.username === username);
 }
 
 function userLeave(id) {
@@ -33,5 +38,6 @@ module.exports = {
   userJoin,
   userLeave,
   getCurrentUser,
+  getUserByUsername,
   getRoomUsers,
 };
