@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const express = require("express");
 const socket = require("socket.io");
 const {
@@ -8,8 +9,19 @@ const {
   getRoomUsers,
   getUserByUsername,
 } = require("./util/users");
+const User = require("./models");
+require("dotenv").config();
 
 const app = express();
+
+const db = process.env.URI;
+
+mongoose
+  .connect(db, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("MongoDB successfully connected"))
+  .catch((err) => console.log(err));
+
+app.use(express.json());
 
 const port = process.env.PORT || 5000;
 
@@ -25,8 +37,13 @@ const botname = "ADIBOT 2.o";
 
 io.on("connection", (socket) => {
   console.log("socket connection successful", socket.id);
-  socket.on("joinRoom", function ({ username, room }) {
+  socket.on("joinRoom", async function ({ username, room }) {
     const user = userJoin(socket.id, username, room);
+    let profile = User();
+    profile.socket_id = socket.id;
+    profile.username = username;
+    profile.room = room;
+    await profile.save();
     socket.join(user.room);
     socket.emit("message", formatMessage(botname, "welcom to socket-chat"));
     socket.broadcast
@@ -40,7 +57,7 @@ io.on("connection", (socket) => {
       users: getRoomUsers(user.room),
     });
   });
-  socket.on("receiver", async({receiver, data}) => {
+  socket.on("receiver", async ({ receiver, data }) => {
     let user = await getUserByUsername(receiver);
     // console.log(user.id, data);
     io.to(user.id).emit("notification", data);
@@ -50,8 +67,9 @@ io.on("connection", (socket) => {
     io.to(user.room).emit("message", formatMessage(user.username, msg));
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     const user = userLeave(socket.id);
+    await User.deleteOne({ socket_id: socket.id });
     if (user) {
       io.to(user.room).emit(
         "message",
